@@ -10,10 +10,12 @@ type Gateway struct {
 }
 
 func NewGateway() *Gateway {
+	mux := http.NewServeMux()
+	SetupRoutes(mux)
 	return &Gateway{
 		Server: &http.Server{
 			Addr:    ":8080",
-			Handler: http.NewServeMux(),
+			Handler: mux,
 		},
 	}
 }

@@ -3,6 +3,7 @@ package gateway
 import (
 	"context"
 	"net/http"
+	"os"
 )
 
 type Gateway struct {
@@ -10,11 +11,17 @@ type Gateway struct {
 }
 
 func NewGateway() *Gateway {
+	addr := os.Getenv("GATEWAY_ADDRESS")
+	if addr == "" {
+		addr = ":8080"
+	}
+
 	mux := http.NewServeMux()
 	SetupRoutes(mux)
+
 	return &Gateway{
 		Server: &http.Server{
-			Addr:    ":8080",
+			Addr:    addr,
 			Handler: mux,
 		},
 	}

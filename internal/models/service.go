@@ -3,7 +3,7 @@ package models
 type APIType string
 
 const (
-	gRPC APIType = "grpc"
+	GRPC APIType = "grpc"
 	REST APIType = "rest"
 )
 

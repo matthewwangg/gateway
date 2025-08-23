@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 
@@ -133,7 +134,7 @@ func (c *RESTClient) Call(endpointName string, params map[string]interface{}, re
 		return err
 	}
 	defer func() {
-		if err := response.Body.Close(); err != nil {
+		if err = response.Body.Close(); err != nil {
 			return
 		}
 	}()
@@ -142,7 +143,12 @@ func (c *RESTClient) Call(endpointName string, params map[string]interface{}, re
 		return nil
 	}
 
-	if err := json.NewDecoder(response.Body).Decode(result); err != nil {
+	body, err := io.ReadAll(response.Body)
+	if err != nil {
+		return err
+	}
+
+	if err = json.Unmarshal(body, &result); err != nil {
 		return err
 	}
 

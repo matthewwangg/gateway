@@ -1,8 +1,9 @@
 package client
 
 import (
-	"github.com/matthewwangg/gateway/internal/models"
 	"net/http"
+
+	models "github.com/matthewwangg/gateway/internal/models"
 )
 
 type RESTClient struct {
@@ -25,21 +26,35 @@ const (
 	DELETE RESTMethod = "DELETE"
 )
 
-func NewRESTClient(address string, serviceDefinition *models.ServiceDefinition) *RESTClient {
-	client := &RESTClient{
-		Address:   address,
-		Endpoints: []RESTEndpoint{},
-	}
+func NewRESTClient(serviceDefinition *models.ServiceDefinition) *RESTClient {
+	client := &RESTClient{}
 
-	if !client.HealthCheck() {
-		return nil
+	for _, address := range serviceDefinition.Addresses {
+		endpoints := make([]RESTEndpoint, 0)
+		for _, endpoint := range serviceDefinition.Endpoints {
+			endpoints = append(endpoints, RESTEndpoint{
+				Path:   endpoint,
+				Method: GET,
+			})
+		}
+
+		client = &RESTClient{
+			Address:   address,
+			Endpoints: endpoints,
+		}
+
+		if client.HealthCheck() {
+			break
+		}
+
+		client = nil
 	}
 
 	return client
 }
 
 func (c *RESTClient) HealthCheck() bool {
-	response, err := http.Get(c.Address + "/healthz")
+	response, err := http.Get("http://" + c.Address + "/healthz")
 	if err != nil {
 		return false
 	}
@@ -48,6 +63,5 @@ func (c *RESTClient) HealthCheck() bool {
 			return
 		}
 	}()
-
 	return response.StatusCode == 200
 }

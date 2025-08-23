@@ -4,10 +4,13 @@ import (
 	"context"
 	"net/http"
 	"os"
+
+	registry "github.com/matthewwangg/gateway/internal/registry"
 )
 
 type Gateway struct {
-	Server *http.Server
+	Server   *http.Server
+	Registry *registry.ServiceRegistry
 }
 
 func NewGateway() *Gateway {
@@ -24,6 +27,7 @@ func NewGateway() *Gateway {
 			Addr:    addr,
 			Handler: mux,
 		},
+		Registry: registry.NewServiceRegistry(os.Getenv("REGISTRY_DIRECTORY")),
 	}
 }
 

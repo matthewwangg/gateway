@@ -2,6 +2,7 @@ package client
 
 import (
 	"net/http"
+	"strings"
 
 	models "github.com/matthewwangg/gateway/internal/models"
 )
@@ -27,30 +28,37 @@ const (
 )
 
 func NewRESTClient(serviceDefinition *models.ServiceDefinition) *RESTClient {
-	client := &RESTClient{}
-
 	for _, address := range serviceDefinition.Addresses {
 		endpoints := make([]RESTEndpoint, 0)
 		for _, endpoint := range serviceDefinition.Endpoints {
-			endpoints = append(endpoints, RESTEndpoint{
-				Path:   endpoint,
-				Method: GET,
-			})
+			parts := strings.Split(endpoint, " ")
+
+			if len(parts) != 2 {
+				endpoints = append(endpoints, RESTEndpoint{
+					Path:   endpoint,
+					Method: GET,
+				})
+			} else {
+				method := RESTMethod(parts[0])
+				path := parts[1]
+				endpoints = append(endpoints, RESTEndpoint{
+					Path:   path,
+					Method: method,
+				})
+			}
 		}
 
-		client = &RESTClient{
+		client := &RESTClient{
 			Address:   address,
 			Endpoints: endpoints,
 		}
 
 		if client.HealthCheck() {
-			break
+			return client
 		}
-
-		client = nil
 	}
 
-	return client
+	return nil
 }
 
 func (c *RESTClient) HealthCheck() bool {

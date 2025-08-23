@@ -47,3 +47,14 @@ func (s *ServiceRegistry) Reload() {
 
 	s.Services = services
 }
+
+func (s *ServiceRegistry) Register(service *models.ServiceDefinition) {
+	s.Services[service.Name] = service
+}
+
+func (s *ServiceRegistry) Get(serviceName string) *models.ServiceDefinition {
+	if service, ok := s.Services[serviceName]; ok {
+		return service
+	}
+	return nil
+}

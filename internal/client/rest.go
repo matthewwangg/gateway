@@ -1,6 +1,9 @@
 package client
 
 import (
+	"bytes"
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -9,7 +12,7 @@ import (
 
 type RESTClient struct {
 	Address   string
-	Endpoints []RESTEndpoint
+	Endpoints map[string]RESTEndpoint
 }
 
 type RESTEndpoint struct {
@@ -29,22 +32,38 @@ const (
 
 func NewRESTClient(serviceDefinition *models.ServiceDefinition) *RESTClient {
 	for _, address := range serviceDefinition.Addresses {
-		endpoints := make([]RESTEndpoint, 0)
+		endpoints := make(map[string]RESTEndpoint)
 		for _, endpoint := range serviceDefinition.Endpoints {
 			parts := strings.Split(endpoint, " ")
 
 			if len(parts) != 2 {
-				endpoints = append(endpoints, RESTEndpoint{
+				endpoints["GET "+endpoint] = RESTEndpoint{
 					Path:   endpoint,
 					Method: GET,
-				})
+				}
+				endpoints["POST "+endpoint] = RESTEndpoint{
+					Path:   endpoint,
+					Method: POST,
+				}
+				endpoints["PUT "+endpoint] = RESTEndpoint{
+					Path:   endpoint,
+					Method: PUT,
+				}
+				endpoints["PATCH "+endpoint] = RESTEndpoint{
+					Path:   endpoint,
+					Method: PATCH,
+				}
+				endpoints["DELETE "+endpoint] = RESTEndpoint{
+					Path:   endpoint,
+					Method: DELETE,
+				}
 			} else {
 				method := RESTMethod(parts[0])
 				path := parts[1]
-				endpoints = append(endpoints, RESTEndpoint{
+				endpoints[endpoint] = RESTEndpoint{
 					Path:   path,
 					Method: method,
-				})
+				}
 			}
 		}
 
@@ -72,4 +91,60 @@ func (c *RESTClient) HealthCheck() bool {
 		}
 	}()
 	return response.StatusCode == 200
+}
+
+func (c *RESTClient) Call(endpointName string, params map[string]interface{}, result interface{}) error {
+	address := c.Address
+
+	if !strings.HasPrefix(address, "http://") {
+		address = "http://" + address
+	}
+
+	endpoint, ok := c.Endpoints[endpointName]
+	if !ok {
+		return fmt.Errorf("endpoint %s not found", endpointName)
+	}
+
+	url := address + endpoint.Path
+
+	var request *http.Request
+	var err error
+
+	if endpoint.Method == GET {
+		request, err = http.NewRequest(string(endpoint.Method), url, nil)
+		if err != nil {
+			return err
+		}
+	} else {
+		body, err := json.Marshal(params)
+		if err != nil {
+			return err
+		}
+
+		request, err = http.NewRequest(string(endpoint.Method), url, bytes.NewBuffer(body))
+		if err != nil {
+			return err
+		}
+		request.Header.Set("Content-Type", "application/json")
+	}
+
+	response, err := http.DefaultClient.Do(request)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err := response.Body.Close(); err != nil {
+			return
+		}
+	}()
+
+	if result == nil {
+		return nil
+	}
+
+	if err := json.NewDecoder(response.Body).Decode(result); err != nil {
+		return err
+	}
+
+	return nil
 }

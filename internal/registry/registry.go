@@ -1,17 +1,20 @@
 package registry
 
 import (
-	models "github.com/matthewwangg/gateway/internal/models"
-	"github.com/matthewwangg/gateway/internal/parser"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
+
+	models "github.com/matthewwangg/gateway/internal/models"
+	parser "github.com/matthewwangg/gateway/internal/parser"
 )
 
 type ServiceRegistry struct {
 	Services  map[string]*models.ServiceDefinition
 	Directory string
+	mu        sync.RWMutex
 }
 
 func NewServiceRegistry(directory string) *ServiceRegistry {
@@ -45,14 +48,20 @@ func (s *ServiceRegistry) Reload() {
 		services[serviceDefinition.Name] = serviceDefinition
 	}
 
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	s.Services = services
 }
 
 func (s *ServiceRegistry) Register(service *models.ServiceDefinition) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	s.Services[service.Name] = service
 }
 
 func (s *ServiceRegistry) Get(serviceName string) *models.ServiceDefinition {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 	if service, ok := s.Services[serviceName]; ok {
 		return service
 	}

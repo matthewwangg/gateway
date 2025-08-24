@@ -1,7 +1,11 @@
 package gateway
 
 import (
+	"encoding/json"
 	"net/http"
+
+	client "github.com/matthewwangg/gateway/internal/client"
+	models "github.com/matthewwangg/gateway/internal/models"
 )
 
 func (g *Gateway) HealthCheck(w http.ResponseWriter, r *http.Request) {
@@ -10,4 +14,48 @@ func (g *Gateway) HealthCheck(w http.ResponseWriter, r *http.Request) {
 
 func (g *Gateway) Reload(w http.ResponseWriter, r *http.Request) {
 	g.Registry.Reload()
+}
+
+func (g *Gateway) Call(w http.ResponseWriter, r *http.Request) {
+	type CallRequestBody struct {
+		Type     models.APIType         `json:"type"`
+		Service  string                 `json:"service"`
+		Endpoint string                 `json:"endpoint"`
+		Params   map[string]interface{} `json:"params"`
+	}
+
+	var body CallRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if body.Type != models.REST {
+		http.Error(w, "api type not yet supported", http.StatusBadRequest)
+		return
+	}
+
+	service, ok := g.Registry.Services[body.Service]
+	if !ok {
+		http.Error(w, "service not found", http.StatusNotFound)
+		return
+	}
+
+	c := client.NewRESTClient(service)
+	if c == nil {
+		http.Error(w, "service not healthy", http.StatusNotFound)
+		return
+	}
+
+	result := map[string]interface{}{}
+	if err := c.Call(body.Endpoint, body.Params, &result); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(result); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }

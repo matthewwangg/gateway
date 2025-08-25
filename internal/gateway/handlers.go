@@ -16,6 +16,13 @@ func (g *Gateway) Reload(w http.ResponseWriter, r *http.Request) {
 	g.Registry.Reload()
 }
 
+func (g *Gateway) Services(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(g.Registry.Services); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
 func (g *Gateway) Call(w http.ResponseWriter, r *http.Request) {
 	type CallRequestBody struct {
 		Type     models.APIType         `json:"type"`

@@ -5,12 +5,14 @@ import (
 	"net/http"
 	"os"
 
+	balancer "github.com/matthewwangg/gateway/internal/balancer"
 	registry "github.com/matthewwangg/gateway/internal/registry"
 )
 
 type Gateway struct {
-	Server   *http.Server
-	Registry *registry.ServiceRegistry
+	Server       *http.Server
+	Registry     *registry.ServiceRegistry
+	LoadBalancer *balancer.LoadBalancer
 }
 
 func NewGateway() *Gateway {
@@ -19,16 +21,23 @@ func NewGateway() *Gateway {
 		addr = ":8080"
 	}
 
+	server := &http.Server{
+		Addr:    addr,
+		Handler: nil,
+	}
+
+	serviceRegistry := registry.NewServiceRegistry(os.Getenv("REGISTRY_DIRECTORY"))
+	loadBalancer := balancer.NewLoadBalancer(balancer.RoundRobin, serviceRegistry.Services)
+
 	g := &Gateway{
-		Server: &http.Server{
-			Addr:    addr,
-			Handler: nil,
-		},
-		Registry: registry.NewServiceRegistry(os.Getenv("REGISTRY_DIRECTORY")),
+		Server:       server,
+		Registry:     serviceRegistry,
+		LoadBalancer: loadBalancer,
 	}
 
 	mux := http.NewServeMux()
 	g.SetupRoutes(mux)
+
 	g.Server.Handler = mux
 
 	return g

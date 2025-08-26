@@ -1,15 +1,37 @@
 package balancer
 
+import (
+	"github.com/matthewwangg/gateway/internal/models"
+)
+
 type LoadBalancerMode string
 
 const (
-	LoadBalancerModeRoundRobin LoadBalancerMode = "round_robin"
+	RoundRobin LoadBalancerMode = "round_robin"
 )
 
-type LoadBalancer struct {
-	Mode LoadBalancerMode
+type ServiceUsage struct {
+	Addresses []string
+	Count     int
 }
 
-func NewLoadBalancer(mode LoadBalancerMode) *LoadBalancer {
-	return &LoadBalancer{mode}
+type LoadBalancer struct {
+	Mode          LoadBalancerMode
+	ServiceUsages map[string]ServiceUsage
+}
+
+func NewLoadBalancer(mode LoadBalancerMode, services map[string]*models.ServiceDefinition) *LoadBalancer {
+	serviceUsages := make(map[string]ServiceUsage)
+
+	for serviceName, serviceDefinition := range services {
+		serviceUsages[serviceName] = ServiceUsage{
+			Addresses: serviceDefinition.Addresses,
+			Count:     0,
+		}
+	}
+
+	return &LoadBalancer{
+		Mode:          mode,
+		ServiceUsages: serviceUsages,
+	}
 }

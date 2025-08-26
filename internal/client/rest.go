@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strings"
 
+	balancer "github.com/matthewwangg/gateway/internal/balancer"
 	models "github.com/matthewwangg/gateway/internal/models"
 )
 
@@ -31,51 +33,62 @@ const (
 	DELETE RESTMethod = "DELETE"
 )
 
-func NewRESTClient(serviceDefinition *models.ServiceDefinition) *RESTClient {
-	for _, address := range serviceDefinition.Addresses {
-		endpoints := make(map[string]RESTEndpoint)
-		for _, endpoint := range serviceDefinition.Endpoints {
-			parts := strings.Split(endpoint, " ")
+func NewRESTClient(serviceDefinition *models.ServiceDefinition, loadBalancer *balancer.LoadBalancer) *RESTClient {
+	endpoints := make(map[string]RESTEndpoint)
+	for _, endpoint := range serviceDefinition.Endpoints {
+		parts := strings.Split(endpoint, " ")
 
-			if len(parts) != 2 {
-				endpoints["GET "+endpoint] = RESTEndpoint{
-					Path:   endpoint,
-					Method: GET,
-				}
-				endpoints["POST "+endpoint] = RESTEndpoint{
-					Path:   endpoint,
-					Method: POST,
-				}
-				endpoints["PUT "+endpoint] = RESTEndpoint{
-					Path:   endpoint,
-					Method: PUT,
-				}
-				endpoints["PATCH "+endpoint] = RESTEndpoint{
-					Path:   endpoint,
-					Method: PATCH,
-				}
-				endpoints["DELETE "+endpoint] = RESTEndpoint{
-					Path:   endpoint,
-					Method: DELETE,
-				}
-			} else {
-				method := RESTMethod(parts[0])
-				path := parts[1]
-				endpoints[endpoint] = RESTEndpoint{
-					Path:   path,
-					Method: method,
-				}
+		if len(parts) != 2 {
+			endpoints["GET "+endpoint] = RESTEndpoint{
+				Path:   endpoint,
+				Method: GET,
+			}
+			endpoints["POST "+endpoint] = RESTEndpoint{
+				Path:   endpoint,
+				Method: POST,
+			}
+			endpoints["PUT "+endpoint] = RESTEndpoint{
+				Path:   endpoint,
+				Method: PUT,
+			}
+			endpoints["PATCH "+endpoint] = RESTEndpoint{
+				Path:   endpoint,
+				Method: PATCH,
+			}
+			endpoints["DELETE "+endpoint] = RESTEndpoint{
+				Path:   endpoint,
+				Method: DELETE,
+			}
+		} else {
+			method := RESTMethod(parts[0])
+			path := parts[1]
+			endpoints[endpoint] = RESTEndpoint{
+				Path:   path,
+				Method: method,
 			}
 		}
+	}
 
-		client := &RESTClient{
-			Address:   address,
-			Endpoints: endpoints,
-		}
+	var address string
+	var err error
 
-		if client.HealthCheck() {
-			return client
+	if len(serviceDefinition.Addresses) == 1 {
+		address = serviceDefinition.Addresses[0]
+	} else {
+		log.Println("hello")
+		address, err = loadBalancer.Select(serviceDefinition.Name)
+		if err != nil {
+			return nil
 		}
+	}
+
+	client := &RESTClient{
+		Address:   address,
+		Endpoints: endpoints,
+	}
+
+	if client.HealthCheck() {
+		return client
 	}
 
 	return nil

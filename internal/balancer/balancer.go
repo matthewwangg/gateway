@@ -1,7 +1,9 @@
 package balancer
 
 import (
-	"github.com/matthewwangg/gateway/internal/models"
+	"errors"
+	
+	models "github.com/matthewwangg/gateway/internal/models"
 )
 
 type LoadBalancerMode string
@@ -17,14 +19,14 @@ type ServiceUsage struct {
 
 type LoadBalancer struct {
 	Mode          LoadBalancerMode
-	ServiceUsages map[string]ServiceUsage
+	ServiceUsages map[string]*ServiceUsage
 }
 
 func NewLoadBalancer(mode LoadBalancerMode, services map[string]*models.ServiceDefinition) *LoadBalancer {
-	serviceUsages := make(map[string]ServiceUsage)
+	serviceUsages := make(map[string]*ServiceUsage)
 
 	for serviceName, serviceDefinition := range services {
-		serviceUsages[serviceName] = ServiceUsage{
+		serviceUsages[serviceName] = &ServiceUsage{
 			Addresses: serviceDefinition.Addresses,
 			Count:     0,
 		}
@@ -34,4 +36,21 @@ func NewLoadBalancer(mode LoadBalancerMode, services map[string]*models.ServiceD
 		Mode:          mode,
 		ServiceUsages: serviceUsages,
 	}
+}
+
+func (l *LoadBalancer) Select(serviceName string) (string, error) {
+	usage, ok := l.ServiceUsages[serviceName]
+	if !ok || len(usage.Addresses) < 1 {
+		return "", errors.New("service not valid")
+	}
+
+	address := ""
+
+	switch l.Mode {
+	case RoundRobin:
+		address = usage.Addresses[(usage.Count)%len(usage.Addresses)]
+		usage.Count += 1
+	}
+
+	return address, nil
 }

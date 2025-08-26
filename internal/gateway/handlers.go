@@ -88,7 +88,7 @@ func (g *Gateway) Call(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	c := client.NewRESTClient(service)
+	c := client.NewRESTClient(service, g.LoadBalancer)
 	if c == nil {
 		http.Error(w, "service not healthy", http.StatusNotFound)
 		return

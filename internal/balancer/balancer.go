@@ -15,12 +15,12 @@ const (
 )
 
 type AddressUsage struct {
-	Address      string
 	ResponseTime time.Duration
 }
 
 type ServiceUsage struct {
-	AddressUsages []*AddressUsage
+	Addresses     []string
+	AddressUsages map[string]*AddressUsage
 	Count         int
 }
 
@@ -32,16 +32,15 @@ type LoadBalancer struct {
 func NewLoadBalancer(mode LoadBalancerMode, services map[string]*models.ServiceDefinition) *LoadBalancer {
 	serviceUsages := make(map[string]*ServiceUsage)
 	for serviceName, serviceDefinition := range services {
-		addressUsages := make([]*AddressUsage, 0)
+		addressUsages := make(map[string]*AddressUsage)
 		for _, address := range serviceDefinition.Addresses {
-			addressUsage := &AddressUsage{
-				Address:      address,
+			addressUsages[address] = &AddressUsage{
 				ResponseTime: 0 * time.Second,
 			}
-			addressUsages = append(addressUsages, addressUsage)
 		}
 
 		serviceUsages[serviceName] = &ServiceUsage{
+			Addresses:     serviceDefinition.Addresses,
 			AddressUsages: addressUsages,
 			Count:         0,
 		}
@@ -63,14 +62,14 @@ func (l *LoadBalancer) Select(serviceName string) (string, error) {
 
 	switch l.Mode {
 	case RoundRobin:
-		address = usage.AddressUsages[(usage.Count)%len(usage.AddressUsages)].Address
+		address = usage.Addresses[(usage.Count)%len(usage.AddressUsages)]
 		usage.Count += 1
 	case LeastResponseTime:
 		lowestResponseTime := 24 * time.Hour
-		for _, addressUsage := range usage.AddressUsages {
+		for addressKey, addressUsage := range usage.AddressUsages {
 			if addressUsage.ResponseTime < lowestResponseTime {
 				lowestResponseTime = addressUsage.ResponseTime
-				address = addressUsage.Address
+				address = addressKey
 			}
 		}
 	}

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"strings"
 
@@ -75,7 +74,6 @@ func NewRESTClient(serviceDefinition *models.ServiceDefinition, loadBalancer *ba
 	if len(serviceDefinition.Addresses) == 1 {
 		address = serviceDefinition.Addresses[0]
 	} else {
-		log.Println("hello")
 		address, err = loadBalancer.Select(serviceDefinition.Name)
 		if err != nil {
 			return nil

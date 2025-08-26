@@ -2,19 +2,26 @@ package balancer
 
 import (
 	"errors"
-	
+	"time"
+
 	models "github.com/matthewwangg/gateway/internal/models"
 )
 
 type LoadBalancerMode string
 
 const (
-	RoundRobin LoadBalancerMode = "round_robin"
+	RoundRobin        LoadBalancerMode = "round_robin"
+	LeastResponseTime LoadBalancerMode = "least_response_time"
 )
 
+type AddressUsage struct {
+	Address      string
+	ResponseTime time.Duration
+}
+
 type ServiceUsage struct {
-	Addresses []string
-	Count     int
+	AddressUsages []*AddressUsage
+	Count         int
 }
 
 type LoadBalancer struct {
@@ -24,11 +31,19 @@ type LoadBalancer struct {
 
 func NewLoadBalancer(mode LoadBalancerMode, services map[string]*models.ServiceDefinition) *LoadBalancer {
 	serviceUsages := make(map[string]*ServiceUsage)
-
 	for serviceName, serviceDefinition := range services {
+		addressUsages := make([]*AddressUsage, 0)
+		for _, address := range serviceDefinition.Addresses {
+			addressUsage := &AddressUsage{
+				Address:      address,
+				ResponseTime: 0 * time.Second,
+			}
+			addressUsages = append(addressUsages, addressUsage)
+		}
+
 		serviceUsages[serviceName] = &ServiceUsage{
-			Addresses: serviceDefinition.Addresses,
-			Count:     0,
+			AddressUsages: addressUsages,
+			Count:         0,
 		}
 	}
 
@@ -40,7 +55,7 @@ func NewLoadBalancer(mode LoadBalancerMode, services map[string]*models.ServiceD
 
 func (l *LoadBalancer) Select(serviceName string) (string, error) {
 	usage, ok := l.ServiceUsages[serviceName]
-	if !ok || len(usage.Addresses) < 1 {
+	if !ok || len(usage.AddressUsages) < 1 {
 		return "", errors.New("service not valid")
 	}
 
@@ -48,8 +63,16 @@ func (l *LoadBalancer) Select(serviceName string) (string, error) {
 
 	switch l.Mode {
 	case RoundRobin:
-		address = usage.Addresses[(usage.Count)%len(usage.Addresses)]
+		address = usage.AddressUsages[(usage.Count)%len(usage.AddressUsages)].Address
 		usage.Count += 1
+	case LeastResponseTime:
+		lowestResponseTime := 24 * time.Hour
+		for _, addressUsage := range usage.AddressUsages {
+			if addressUsage.ResponseTime < lowestResponseTime {
+				lowestResponseTime = addressUsage.ResponseTime
+				address = addressUsage.Address
+			}
+		}
 	}
 
 	return address, nil

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"os"
+	"time"
 
 	client "github.com/matthewwangg/gateway/internal/client"
 	middleware "github.com/matthewwangg/gateway/internal/middleware"
@@ -88,17 +89,20 @@ func (g *Gateway) Call(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	c := client.NewRESTClient(service)
+	c := client.NewRESTClient(service, g.LoadBalancer)
 	if c == nil {
 		http.Error(w, "service not healthy", http.StatusNotFound)
 		return
 	}
 
 	result := map[string]interface{}{}
+	start := time.Now()
 	if err := c.Call(body.Endpoint, body.Params, &result); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	duration := time.Since(start)
+	g.LoadBalancer.ServiceUsages[body.Service].AddressUsages[c.Address].ResponseTime = duration
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(result); err != nil {

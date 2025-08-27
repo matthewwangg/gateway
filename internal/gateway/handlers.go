@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	balancer "github.com/matthewwangg/gateway/internal/balancer"
 	client "github.com/matthewwangg/gateway/internal/client"
 	middleware "github.com/matthewwangg/gateway/internal/middleware"
 	models "github.com/matthewwangg/gateway/internal/models"
@@ -55,6 +56,7 @@ func (g *Gateway) Login(w http.ResponseWriter, r *http.Request) {
 
 func (g *Gateway) Reload(w http.ResponseWriter, r *http.Request) {
 	g.Registry.Reload()
+	g.LoadBalancer = balancer.NewLoadBalancer(g.LoadBalancer.Mode, g.Registry.Services)
 }
 
 func (g *Gateway) Services(w http.ResponseWriter, r *http.Request) {

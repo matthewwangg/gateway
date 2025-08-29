@@ -6,6 +6,7 @@ import (
 	"os"
 
 	balancer "github.com/matthewwangg/gateway/internal/balancer"
+	middleware "github.com/matthewwangg/gateway/internal/middleware"
 	registry "github.com/matthewwangg/gateway/internal/registry"
 )
 
@@ -18,7 +19,7 @@ type Gateway struct {
 func NewGateway() *Gateway {
 	addr := os.Getenv("GATEWAY_ADDRESS")
 	if addr == "" {
-		addr = ":8080"
+		addr = ":8081"
 	}
 
 	server := &http.Server{
@@ -38,7 +39,10 @@ func NewGateway() *Gateway {
 	mux := http.NewServeMux()
 	g.SetupRoutes(mux)
 
-	g.Server.Handler = mux
+	handler := middleware.Use(mux,
+		middleware.Logger,
+	)
+	g.Server.Handler = handler
 
 	return g
 }

@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"github.com/prometheus/client_golang/prometheus"
+	"strconv"
 )
 
 type MetricsTracker struct {
@@ -33,4 +34,12 @@ func NewMetricsTracker() *MetricsTracker {
 	)
 
 	return tracker
+}
+
+func (t *MetricsTracker) RecordRequest(endpoint string, code int) {
+	t.Requests.WithLabelValues(endpoint, strconv.Itoa(code)).Inc()
+}
+
+func (t *MetricsTracker) RecordServiceCall(service string) {
+	t.ServiceCalls.WithLabelValues(service).Inc()
 }

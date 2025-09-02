@@ -2,13 +2,15 @@ package gateway
 
 import (
 	"encoding/json"
-	"github.com/matthewwangg/gateway/internal/metrics"
 	"net/http"
 	"os"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+
 	balancer "github.com/matthewwangg/gateway/internal/balancer"
 	client "github.com/matthewwangg/gateway/internal/client"
+	metrics "github.com/matthewwangg/gateway/internal/metrics"
 	middleware "github.com/matthewwangg/gateway/internal/middleware"
 	models "github.com/matthewwangg/gateway/internal/models"
 )
@@ -16,6 +18,11 @@ import (
 func (g *Gateway) HealthCheck(w http.ResponseWriter, r *http.Request) {
 	metrics.Tracker.RecordRequest("/healthz", 200)
 	w.WriteHeader(http.StatusOK)
+}
+
+func (g *Gateway) Metrics(w http.ResponseWriter, r *http.Request) {
+	metrics.Tracker.RecordRequest("/metrics", 200)
+	promhttp.Handler().ServeHTTP(w, r)
 }
 
 func (g *Gateway) Login(w http.ResponseWriter, r *http.Request) {

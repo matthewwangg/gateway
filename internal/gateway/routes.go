@@ -8,6 +8,7 @@ import (
 
 func (g *Gateway) SetupRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /healthz", g.HealthCheck)
+	mux.HandleFunc("GET /metrics", g.Metrics)
 	mux.HandleFunc("POST /login", g.Login)
 
 	mux.Handle("GET /reload", g.Secure(g.Reload))

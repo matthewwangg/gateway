@@ -5,6 +5,8 @@ import (
 	"net"
 	"net/http"
 	"time"
+
+	metrics "github.com/matthewwangg/gateway/internal/metrics"
 )
 
 func init() {
@@ -39,6 +41,8 @@ func Logger(next http.Handler) http.Handler {
 
 		lrw := &LogResponseWriter{w: w, statusCode: http.StatusOK}
 		next.ServeHTTP(lrw, r)
+
+		metrics.Tracker.RecordRequest(r.URL.Path, lrw.statusCode)
 
 		log.Printf("[%s] [INFO] [gateway] [%s] [%s] %s - %d \n", startTime, host, r.Method, r.URL.Path, lrw.statusCode)
 	})

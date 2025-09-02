@@ -6,14 +6,21 @@ import (
 	"os"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+
 	balancer "github.com/matthewwangg/gateway/internal/balancer"
 	client "github.com/matthewwangg/gateway/internal/client"
+	metrics "github.com/matthewwangg/gateway/internal/metrics"
 	middleware "github.com/matthewwangg/gateway/internal/middleware"
 	models "github.com/matthewwangg/gateway/internal/models"
 )
 
 func (g *Gateway) HealthCheck(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
+}
+
+func (g *Gateway) Metrics(w http.ResponseWriter, r *http.Request) {
+	promhttp.Handler().ServeHTTP(w, r)
 }
 
 func (g *Gateway) Login(w http.ResponseWriter, r *http.Request) {
@@ -111,4 +118,5 @@ func (g *Gateway) Call(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	metrics.Tracker.RecordServiceCall(body.Service)
 }

@@ -6,6 +6,7 @@ import (
 	"os"
 
 	balancer "github.com/matthewwangg/gateway/internal/balancer"
+	metrics "github.com/matthewwangg/gateway/internal/metrics"
 	middleware "github.com/matthewwangg/gateway/internal/middleware"
 	registry "github.com/matthewwangg/gateway/internal/registry"
 )
@@ -43,6 +44,8 @@ func NewGateway() *Gateway {
 		middleware.Logger,
 	)
 	g.Server.Handler = handler
+
+	metrics.Init()
 
 	return g
 }

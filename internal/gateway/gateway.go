@@ -42,6 +42,7 @@ func NewGateway() *Gateway {
 
 	handler := middleware.Use(mux,
 		middleware.Logger,
+		middleware.RateLimiter,
 	)
 	g.Server.Handler = handler
 

@@ -9,9 +9,12 @@ import (
 	"os/signal"
 
 	gateway "github.com/matthewwangg/gateway/internal/gateway"
+	logger "github.com/matthewwangg/gateway/internal/logger"
 )
 
 func main() {
+	logger.Init(logger.Local, "gateway", "127.0.0.1")
+
 	g := gateway.NewGateway()
 
 	go func() {

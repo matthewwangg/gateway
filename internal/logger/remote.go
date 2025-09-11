@@ -10,7 +10,7 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	pb "github.com/matthewwangg/task-runner/internal/pb"
+	pb "github.com/matthewwangg/gateway/internal/pb"
 )
 
 type RemoteLogger struct {

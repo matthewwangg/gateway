@@ -2,10 +2,10 @@ package middleware
 
 import (
 	"log"
-	"net"
 	"net/http"
-	"time"
+	"strconv"
 
+	logger "github.com/matthewwangg/gateway/internal/logger"
 	metrics "github.com/matthewwangg/gateway/internal/metrics"
 )
 
@@ -33,17 +33,11 @@ func (lrw *LogResponseWriter) Write(b []byte) (int, error) {
 
 func Logger(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		startTime := time.Now().Format("15:04:05")
-		host, _, err := net.SplitHostPort(r.RemoteAddr)
-		if err != nil {
-			host = "Unknown"
-		}
-
 		lrw := &LogResponseWriter{w: w, statusCode: http.StatusOK}
 		next.ServeHTTP(lrw, r)
 
 		metrics.Tracker.RecordRequest(r.URL.Path, lrw.statusCode)
 
-		log.Printf("[%s] [INFO] [gateway] [%s] [%s] %s - %d \n", startTime, host, r.Method, r.URL.Path, lrw.statusCode)
+		logger.Log.Info(r.Method + " " + r.URL.Path + " " + strconv.Itoa(lrw.statusCode))
 	})
 }

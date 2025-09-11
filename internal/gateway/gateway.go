@@ -20,7 +20,7 @@ type Gateway struct {
 func NewGateway() *Gateway {
 	addr := os.Getenv("GATEWAY_ADDRESS")
 	if addr == "" {
-		addr = ":8081"
+		addr = ":8080"
 	}
 
 	server := &http.Server{

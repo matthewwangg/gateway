@@ -1,12 +1,12 @@
 package registry
 
 import (
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
 
+	logger "github.com/matthewwangg/gateway/internal/logger"
 	models "github.com/matthewwangg/gateway/internal/models"
 	parser "github.com/matthewwangg/gateway/internal/parser"
 )
@@ -31,7 +31,8 @@ func NewServiceRegistry(directory string) *ServiceRegistry {
 func (s *ServiceRegistry) Reload() {
 	files, err := os.ReadDir(s.Directory)
 	if err != nil {
-		log.Fatalf("error reading directory: %v", err)
+		logger.Log.Error("error reading directory: " + string(err.Error()))
+		return
 	}
 
 	services := map[string]*models.ServiceDefinition{}

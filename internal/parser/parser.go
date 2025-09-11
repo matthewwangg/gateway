@@ -1,9 +1,9 @@
 package parser
 
 import (
-	"log"
 	"strconv"
 
+	logger "github.com/matthewwangg/gateway/internal/logger"
 	models "github.com/matthewwangg/gateway/internal/models"
 )
 
@@ -18,7 +18,11 @@ func NewParser(filepath string) *Parser {
 func (p *Parser) Expect(tokenType TokenType) Token {
 	token := p.Lexer.GetToken()
 	if tokenType != token.Type {
-		log.Fatalf("parser failed to correctly parse service definition: expected %s got %s", tokenType, token.Type)
+		logger.Log.Error("parser failed to correctly parse service definition: expected " + string(tokenType) + " got " + string(token.Type))
+		return Token{
+			Type:   TOKEN_EOF,
+			Lexeme: "EOF",
+		}
 	}
 	return token
 }

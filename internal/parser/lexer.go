@@ -2,9 +2,10 @@ package parser
 
 import (
 	"bufio"
-	"log"
 	"os"
 	"strings"
+
+	logger "github.com/matthewwangg/gateway/internal/logger"
 )
 
 type Lexer struct {
@@ -23,12 +24,12 @@ func NewLexer(filepath string) *Lexer {
 func Tokenize(filepath string) []Token {
 	file, err := os.Open(filepath)
 	if err != nil {
-		log.Printf("error opening service definition file at %s\n", filepath)
+		logger.Log.Error("error opening service definition file at " + filepath + "\n")
 		return nil
 	}
 	defer func() {
 		if err := file.Close(); err != nil {
-			log.Printf("error closing service definition file at %s\n", filepath)
+			logger.Log.Error("error closing service definition file at " + filepath + "\n")
 			return
 		}
 	}()

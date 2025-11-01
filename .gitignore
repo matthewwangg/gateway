@@ -33,3 +33,6 @@ go.work.sum
 
 # Protobufs
 *.pb.go
+
+# Service file
+*.svc

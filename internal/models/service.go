@@ -8,9 +8,10 @@ const (
 )
 
 type ServiceDefinition struct {
-	Name      string
-	Replicas  int
-	Addresses []string
-	APIType   APIType
-	Endpoints []string
+	Name           string
+	Replicas       int
+	Addresses      []string
+	APIType        APIType
+	Endpoints      []string
+	HealthEndpoint string
 }

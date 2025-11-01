@@ -109,6 +109,9 @@ func (p *Parser) AddField(serviceDefinition *models.ServiceDefinition, key strin
 	case "endpoints":
 		serviceDefinition.Endpoints = values
 		break
+	case "health_endpoint":
+		serviceDefinition.HealthEndpoint = values[0]
+		break
 	default:
 		break
 	}
